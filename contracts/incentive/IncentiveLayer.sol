@@ -1,7 +1,6 @@
 pragma solidity ^0.4.18;
 
 import "./DepositsManager.sol";
-import "./JackpotManager.sol";
 import "./TRU.sol";
 import "../dispute/Filesystem.sol";
 import "./ExchangeRateOracle.sol";
@@ -15,10 +14,10 @@ interface Callback {
     function cancelled(bytes32 taskID) external;
 }
 
-contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
+contract IncentiveLayer is DepositsManager, RewardsManager {
 
     uint private numTasks = 0;
-    uint private forcedErrorThreshold = 500000; // should mean 100000/1000000 probability
+    uint private forcedErrorThreshold = 1000000; // should mean 100000/1000000 probability
     uint private taxMultiplier = 5;
 
     uint constant TIMEOUT = 100;
@@ -68,7 +67,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         StorageType fileStorage;
         bytes32 fileId;
     }
-    
+
     struct Task {
         address owner;
         address selectedSolver;
@@ -102,6 +101,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         bool solution0Correct;
         address[] solution0Challengers;
         address[] solution1Challengers;
+        uint[] stakes;
         address[] allChallengers;
         address currentChallenger;
         bool solverConvicted;
@@ -110,6 +110,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         bytes32 dataHash;
         bytes32 sizeHash;
         bytes32 nameHash;
+        uint totalStake;
     }
 
     mapping(bytes32 => Task) private tasks;
@@ -122,8 +123,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     TRU tru;
 
     constructor (address _TRU, address _exchangeRateOracle, address _disputeResolutionLayer, address fs_addr) 
-        DepositsManager(_TRU) 
-        JackpotManager(_TRU)
+        DepositsManager(_TRU)
         RewardsManager(_TRU)
         public 
     {
@@ -131,6 +131,7 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         oracle = ExchangeRateOracle(_exchangeRateOracle);
         fs = Filesystem(fs_addr);
         tru = TRU(_TRU);
+
     }
 
     function getBalance(address addr) public view returns (uint) {
@@ -452,21 +453,23 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
     // @param taskID – the task id.
     // @param intent – submit 0 to challenge solution0, 1 to challenge solution1, anything else challenges both
     // @return – boolean
-    function revealIntent(bytes32 taskID, bytes32 solution0, bytes32 solution1, uint intent) public returns (bool) {
-        uint cblock = challenges[keccak256(abi.encodePacked(taskID, intent, msg.sender, solution0, solution1))];
+    function revealIntent(bytes32 taskID, bytes32 solution0, bytes32 solution1, uint intent, uint deposit) public returns (bool) {
+        uint cblock = challenges[keccak256(abi.encodePacked(taskID, intent, msg.sender, solution0, solution1, deposit))];
         Task storage t = tasks[taskID];
+        Solution storage s = solutions[taskID];
         require(t.state == State.ChallengesAccepted);
         require(t.challengePeriod + TIMEOUT > cblock);
         require(cblock != 0);
+        require(deposit >= t.minDeposit);
         uint solution = intent%2;
-        bondDeposit(taskID, msg.sender, t.minDeposit);
-        if (solution == 0) { // Intent determines which solution the verifier is betting is deemed incorrect
-            solutions[taskID].solution0Challengers.push(msg.sender);
-        } else {
-            solutions[taskID].solution1Challengers.push(msg.sender);
-        }
-        uint position = solutions[taskID].allChallengers.length;
-        solutions[taskID].allChallengers.push(msg.sender);
+        bondDeposit(taskID, msg.sender, deposit);
+        // Intent determines which solution the verifier is betting is deemed incorrect
+        if (solution == 0) s.solution0Challengers.push(msg.sender);
+        else s.solution1Challengers.push(msg.sender);
+        uint position = s.allChallengers.length;
+        s.allChallengers.push(msg.sender);
+        s.stakes.push(deposit);
+        s.totalStake += deposit;
 
         delete tasks[taskID].challenges[msg.sender];
         emit VerificationCommitted(taskID, msg.sender, tasks[taskID].jackpotID, solution, position);
@@ -495,12 +498,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         
         require(keccak256(abi.encodePacked(codeHash, sizeHash, nameHash, dataHash)) == intended);
         
-        if (s.solution0Correct) {
-            s.solution1Challengers.length = 0;
-        }
-        else {
-            s.solution0Challengers.length = 0;
-        }
+        if (s.solution0Correct) s.solution1Challengers.length = 0;
+        else s.solution0Challengers.length = 0;
 
         if (isForcedError(t.randomBits, t.blockhash)) { // this if statement will make this function tricky to test
             rewardJackpot(taskID);
@@ -518,8 +517,8 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
 
     function rewardJackpot(bytes32 taskID) internal {
         Task storage t = tasks[taskID];
-        Solution storage s = solutions[taskID];
-        t.jackpotID = setJackpotReceivers(s.allChallengers);
+        t.jackpotID = finalizeJackpot();
+        // setJackpotReceivers(s.allChallengers, s.totalStake);
         emit JackpotTriggered(taskID, t.jackpotID);
 
         // payReward(taskID, t.owner);//Still compensating solver even though solution wasn't thoroughly verified, task giver recommended to not use solution
@@ -663,6 +662,80 @@ contract IncentiveLayer is JackpotManager, DepositsManager, RewardsManager {
         Task storage t = tasks[taskID];
         Solution storage s = solutions[taskID];
         return (taskID, s.solutionHash0, s.solutionHash1, t.initTaskHash, t.codeType, t.storageType, t.storageAddress, t.selectedSolver);
+    }
+
+    // Handling jackpots
+
+    struct Jackpot {
+        uint finalAmount;
+        uint amount;
+        address[] challengers;
+        uint redeemedCount;
+        uint totalStake;
+    }
+
+    event ReceivedJackpot(address receiver, uint amount);
+
+    mapping(uint => Jackpot) jackpots;//keeps track of versions of jackpots
+
+    uint internal currentJackpotID;
+    event JackpotIncreased(uint amount);
+
+    // @dev – returns the current jackpot
+    // @return – the jackpot.
+    function getJackpotAmount() view public returns (uint) {
+        return jackpots[currentJackpotID].amount;
+    }
+
+    function getCurrentJackpotID() view public returns (uint) {
+        return currentJackpotID;
+    }
+
+    //// @dev – allows a uer to donate to the jackpot.
+    function increaseJackpot(uint _amount) public payable {
+        jackpots[currentJackpotID].amount = jackpots[currentJackpotID].amount.add(_amount);
+        emit JackpotIncreased(_amount);
+    } 
+
+    function finalizeJackpot() internal returns (uint) {
+        currentJackpotID = currentJackpotID + 1;
+        return currentJackpotID - 1;
+    }
+
+    function getJackpotReceivers(bytes32 taskID) public view returns (address[]) {
+        Solution storage s = solutions[taskID];
+        return s.allChallengers;
+    }
+
+    function getJackpotStakes(bytes32 taskID) public view returns (uint[]) {
+        Solution storage s = solutions[taskID];
+        return s.stakes;
+    }
+
+    function debugJackpotPayment(bytes32 taskID, uint index) public returns (uint, uint, uint, uint, uint) {
+        Task storage t = tasks[taskID];
+        Jackpot storage j = jackpots[t.jackpotID];
+        Solution storage s = solutions[taskID];
+
+        if (s.totalStake == 0) return;
+
+        uint amount = j.amount*s.stakes[index]/s.totalStake;
+        return (amount, j.amount, s.stakes[index], s.totalStake, tru.balanceOf(this));
+    }
+
+    function receiveJackpotPayment(bytes32 taskID, uint index) public {
+        Task storage t = tasks[taskID];
+        Jackpot storage j = jackpots[t.jackpotID];
+        Solution storage s = solutions[taskID];
+        require(s.allChallengers[index] == msg.sender);
+        if (s.totalStake == 0) return;
+
+        uint amount = j.amount*s.stakes[index]/s.totalStake;
+        //transfer jackpot payment
+        // token.mint(msg.sender, amount);
+        if (amount == 0) return;
+        tru.transfer(msg.sender, amount);
+        emit ReceivedJackpot(msg.sender, amount /*, j.finalAmount */);
     }
 
 }

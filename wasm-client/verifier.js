@@ -11,6 +11,8 @@ const assert = require('assert')
 
 const fsHelpers = require('./fsHelpers')
 
+const zeroes = "0000000000000000000000000000000000000000000000000000000000000000"
+
 // const merkleComputer = require(__dirname + "/merkle-computer")('./../wasm-client/ocaml-offchain/interpreter/wasm')
 
 const contractsConfig = require('./util/contractsConfig')
@@ -93,7 +95,7 @@ module.exports = {
 
             let taskID = result.args.taskID
             // let storageAddress = result.args.storageAddress
-            let minDeposit = result.args.minDeposit.toNumber()
+            let minDeposit = result.args.minDeposit
             let solverHash0 = result.args.solutionHash0
             let solverHash1 = result.args.solutionHash1
             logger.info("Getting info")
@@ -125,12 +127,20 @@ module.exports = {
                     minDeposit: minDeposit,
                 }
 
+                let deposit = minDeposit
+
+                deposit = deposit.toString(16)
+
+                deposit = zeroes.substr(0, 64-deposit.length) + deposit
+
+                console.log("Deposit:", deposit)
+
                 if ((solverHash0 != solution.hash) ^ test) {
 
                     let intent = helpers.makeSecret(solution.hash + taskID).substr(0, 62) + "00"
                     // console.log("intent", intent)
                     tasks[taskID].intent0 = "0x" + intent
-                    let hash_str = taskID + intent + account.substr(2) + solverHash0.substr(2) + solverHash1.substr(2)
+                    let hash_str = taskID + intent + account.substr(2) + solverHash0.substr(2) + solverHash1.substr(2) + deposit
                     await incentiveLayer.commitChallenge(web3.utils.soliditySha3(hash_str), { from: account, gas: 350000 })
 
                     logger.log({
@@ -145,7 +155,7 @@ module.exports = {
                     let intent = helpers.makeSecret(solution.hash + taskID).substr(0, 62) + "01"
                     tasks[taskID].intent1 = "0x" + intent
                     // console.log("intent", intent)
-                    let hash_str = taskID + intent + account.substr(2) + solverHash0.substr(2) + solverHash1.substr(2)
+                    let hash_str = taskID + intent + account.substr(2) + solverHash0.substr(2) + solverHash1.substr(2) + deposit
                     await incentiveLayer.commitChallenge(web3.utils.soliditySha3(hash_str), { from: account, gas: 350000 })
 
                     logger.log({
@@ -164,11 +174,15 @@ module.exports = {
 
             if (!taskData) return
 
-            await depositsHelper(web3, incentiveLayer, tru, account, taskData.minDeposit)
+            let deposit = taskData.minDeposit.toString(16)
+
+            console.log("Deposit:", deposit)
+
+            await depositsHelper(web3, incentiveLayer, tru, account, deposit)
             if (taskData.intent0) {
-                await incentiveLayer.revealIntent(taskID, taskData.solverHash0, taskData.solverHash1, taskData.intent0, { from: account, gas: 1000000 })
+                await incentiveLayer.revealIntent(taskID, taskData.solverHash0, taskData.solverHash1, taskData.intent0, deposit, { from: account, gas: 1000000 })
             } else if (taskData.intent1) {
-                await incentiveLayer.revealIntent(taskID, taskData.solverHash0, taskData.solverHash1, taskData.intent1, { from: account, gas: 1000000 })
+                await incentiveLayer.revealIntent(taskID, taskData.solverHash0, taskData.solverHash1, taskData.intent1, deposit, { from: account, gas: 1000000 })
             } else {
                 throw `intent0 nor intent1 were truthy for task ${taskID}`
             }
@@ -182,18 +196,25 @@ module.exports = {
 
         addEvent(incentiveLayer.JackpotTriggered, async result => {
             let taskID = result.args.taskID
-            let jackpotID = result.args.jackpotID
+            // let jackpotID = result.args.jackpotID
             let taskData = tasks[taskID]
 
             if (!taskData) return
             logger.info("Triggered jackpot!!!")
 
-            let lst = await incentiveLayer.getJackpotReceivers.call(jackpotID)
+            let lst = await incentiveLayer.getJackpotReceivers.call(taskID)
 
-            // console.log("jackpot receivers", lst)
+            console.log("jackpot receivers", lst)
 
             for (let i = 0; i < lst.length; i++) {
-                if (lst[i].toLowerCase() == account.toLowerCase()) await incentiveLayer.receiveJackpotPayment(jackpotID, i, {from: account, gas: 100000})
+                if (lst[i].toLowerCase() == account.toLowerCase()) {
+                    logger.info("Receiving jackpot")
+                    let lst = await incentiveLayer.getJackpotStakes.call(taskID, {from: account, gas: 1000000})
+                    console.log("Stakes", lst, i)
+                    let res = await incentiveLayer.debugJackpotPayment.call(taskID, i, {from: account, gas: 1000000})
+                    console.log("Payent", res)
+                    await incentiveLayer.receiveJackpotPayment(taskID, i, {from: account, gas: 1000000})
+                }
             }
 
         })
