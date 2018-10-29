@@ -30,7 +30,7 @@ function arrange(arr) {
     let acc = ""
     arr.forEach(function (b) { acc += b; if (acc.length == 64) { res.push("0x"+acc); acc = "" } })
     if (acc != "") res.push("0x"+acc)
-    console.log(res)
+    // console.log(res)
     return res
 }
 
@@ -73,7 +73,7 @@ describe('Truebit OS WASM Scrypt test', async function() {
             if (buf[i] > 15) arr.push(buf[i].toString(16))
             else arr.push("0" + buf[i].toString(16))
         }
-        console.log("Nonce", nonce, {arr:arrange(arr)})
+        // console.log("Nonce", nonce, {arr:arrange(arr)})
         var tx = await filesystem.createFileWithContents(fname, nonce, arrange(arr), buf.length, {from:account})
         var id = await filesystem.calcId.call(nonce, {from:account})
         return id
@@ -96,7 +96,7 @@ describe('Truebit OS WASM Scrypt test', async function() {
 	})
 
 	after(() => {
-            console.log("here")
+        // console.log("here")
 	    killSolver()
 	})
 
@@ -120,11 +120,11 @@ describe('Truebit OS WASM Scrypt test', async function() {
             scrypt_contract = await MyContract.new(cConfig.incentiveLayer.address, cConfig.tru.address, cConfig.fileSystem.address, info.ipfshash, info.codehash, {from:account, gas:2000000})
             let result_event = scrypt_contract.GotFiles()
             result_event.watch(async (err, result) => {
-		console.log("got event, file ID", result.args.files[0])
+		// console.log("got event, file ID", result.args.files[0])
 		result_event.stopWatching(data => {})
 		let fileid = result.args.files[0]
 		var lst = await tbFilesystem.getData(fileid)
-		console.log("got stuff", lst)
+		// console.log("got stuff", lst)
 		scrypt_result = lst[0]
             })
             tru.transfer(scrypt_contract.address, "100000000000", {from:account, gas:200000})

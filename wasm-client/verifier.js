@@ -69,7 +69,7 @@ module.exports = {
                 // console.log(result)
                 if (result && recovery_mode) {
                     events.push({event:result, handler})
-                    console.log("Recovering", result.event, "at block", result.blockNumber)
+                    logger.info(`Recovering ${result.event} at block ${result.blockNumber}`)
                 }
                 else if (result) {
                     try {
@@ -133,7 +133,7 @@ module.exports = {
 
                 deposit = zeroes.substr(0, 64-deposit.length) + deposit
 
-                console.log("Deposit:", deposit)
+                // console.log("Deposit:", deposit)
 
                 if ((solverHash0 != solution.hash) ^ test) {
 
@@ -176,7 +176,7 @@ module.exports = {
 
             let deposit = taskData.minDeposit.toString(16)
 
-            console.log("Deposit:", deposit)
+            // console.log("Deposit:", deposit)
 
             await depositsHelper(web3, incentiveLayer, tru, account, deposit)
             if (taskData.intent0) {
@@ -204,15 +204,15 @@ module.exports = {
 
             let lst = await incentiveLayer.getJackpotReceivers.call(taskID)
 
-            console.log("jackpot receivers", lst)
+            // console.log("jackpot receivers", lst)
 
             for (let i = 0; i < lst.length; i++) {
                 if (lst[i].toLowerCase() == account.toLowerCase()) {
                     logger.info("Receiving jackpot")
                     let lst = await incentiveLayer.getJackpotStakes.call(taskID, {from: account, gas: 1000000})
-                    console.log("Stakes", lst, i)
+                    // console.log("Stakes", lst, i)
                     let res = await incentiveLayer.debugJackpotPayment.call(taskID, i, {from: account, gas: 1000000})
-                    console.log("Payent", res)
+                    // console.log("Debug payment", res)
                     await incentiveLayer.receiveJackpotPayment(taskID, i, {from: account, gas: 1000000})
                 }
             }
@@ -272,6 +272,13 @@ module.exports = {
         })
 
         addEvent(disputeResolutionLayer.Queried, async result => {
+            let gameID = result.args.gameID
+
+            if (games[gameID]) {
+
+                logger.info("I'm querying")
+
+            }
         })
         
         addEvent(disputeResolutionLayer.Reported, async result => {
@@ -303,6 +310,8 @@ module.exports = {
                     num,
                     { from: account }
                 )
+
+                logger.info(`Sent query ${num} for ${gameID}`)
 
             }
         })

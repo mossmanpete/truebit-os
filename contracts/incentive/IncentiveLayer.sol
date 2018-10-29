@@ -712,7 +712,7 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
         return s.stakes;
     }
 
-    function debugJackpotPayment(bytes32 taskID, uint index) public returns (uint, uint, uint, uint, uint) {
+    function debugJackpotPayment(bytes32 taskID, uint index) public view returns (uint, uint, uint, uint, uint) {
         Task storage t = tasks[taskID];
         Jackpot storage j = jackpots[t.jackpotID];
         Solution storage s = solutions[taskID];

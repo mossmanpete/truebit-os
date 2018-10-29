@@ -16,18 +16,8 @@ module.exports.analyze = async function (account, events, recoverTask, recoverGa
         let ev = events[i]
         let taskid = ev.event.args.taskID
         let gameid = ev.event.args.gameID
-        if (taskid) {
-            let num = (await incentiveLayer.getBondedDeposit(taskid, account)).toNumber()
-            if (num > 0) {
-                if (!task_evs[taskid]) {
-                    tasks.push(taskid)
-                    task_evs[taskid] = []
-                }
-                task_evs[taskid].push(ev)
-            }
-        }
         if (gameid) {
-            console.log("Found", ev.event.event, "for", gameid)
+            // console.log("Found", ev.event.event, "for", gameid)
             let actor
             if (!verifier_mode) actor = await disputeResolutionLayer.getProver.call(gameid)
             else actor = await disputeResolutionLayer.getChallenger.call(gameid)
@@ -37,6 +27,22 @@ module.exports.analyze = async function (account, events, recoverTask, recoverGa
                     game_evs[gameid] = []
                 }
                 game_evs[gameid].push(ev)
+
+                if (!taskid) {
+                    taskid = await disputeResolutionLayer.getTask.call(gameid)
+                    ev = 0
+                }
+
+            }
+        }
+        if (taskid) {
+            let num = (await incentiveLayer.getBondedDeposit(taskid, account)).toNumber()
+            if (num > 0) {
+                if (!task_evs[taskid]) {
+                    tasks.push(taskid)
+                    task_evs[taskid] = []
+                }
+                if (ev) task_evs[taskid].push(ev)
             }
         }
     }
@@ -51,7 +57,8 @@ module.exports.analyze = async function (account, events, recoverTask, recoverGa
         await recoverTask(id)
 
         let last = findLastEvent(evs)
-        console.log("Handling to recover:", last.event)
+        if (!last) continue
+        // console.log("Handling to recover:", last.event)
         await last.handler(last.event)
     }
     // for each game, check if it has ended, otherwise handle last event and add it to game list
@@ -65,9 +72,10 @@ module.exports.analyze = async function (account, events, recoverTask, recoverGa
         await recoverGame(id)
 
         let last = findLastEvent(evs)
-        console.log("Handling to recover:", last.event)
+        if (!last) continue
+        // console.log("Handling to recover:", last.event)
         await last.handler(last.event)
     }
-    console.log("Tasks", task_list, "Games", game_list)
+    // console.log("Tasks", task_list, "Games", game_list)
 }
 
