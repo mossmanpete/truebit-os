@@ -1,9 +1,10 @@
 pragma solidity ^0.5.0;
 
-import "../openzeppelin-solidity/SafeMath.sol";
-import "./TRU.sol";
+import "../../openzeppelin-solidity/SafeMath.sol";
+import "../TRU.sol";
+import "./JackpotManagerState.sol";
 
-contract JackpotManager {
+contract JackpotManagerLogic is JackpotManagerState {
     using SafeMath for uint;
 
     event ReceivedJackpot(address receiver, uint amount);

@@ -1,9 +1,10 @@
 pragma solidity ^0.5.0;
 
-import "../openzeppelin-solidity/SafeMath.sol";
-import "./TRU.sol";
+import "../../openzeppelin-solidity/SafeMath.sol";
+import "../TRU.sol";
+import "./DepositsManagerState.sol";
 
-contract DepositsManager {
+contract DepositsManagerLogic is DepositsManagerState {
     using SafeMath for uint;
 
     event DepositMade(address who, uint amount);

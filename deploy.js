@@ -46,6 +46,10 @@ async function deploy() {
     let tru = await deployContract('TRU', {from: accounts[0], gas: 2000000})
     let exchangeRateOracle = await deployContract('ExchangeRateOracle', {from: accounts[0], gas: 1000000})
     let incentiveLayer = await deployContract('IncentiveLayer', {from: accounts[0], gas: 5200000}, [tru._address, exchangeRateOracle._address, interactive._address, fileSystem._address])
+
+    //Set logic contract
+    let incentiveLayerLogic = await deployContract('IncentiveLayerLogic', {from: accounts[0], gas: 500000})
+    await incentiveLayer.methods.setLogicContract(incentiveLayerLogic._address).send({from: accounts, gas: 300000})
     
     // tru.methods.transferOwnership(incentiveLayer._address).send({from: accounts[0], gas: 1000000})
 

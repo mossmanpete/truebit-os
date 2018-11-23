@@ -1,6 +1,13 @@
 pragma solidity ^0.5.0;
 
-contract IncentiveLayerLogic {
+import "../rewards-manager/RewardsManagerLogic.sol";
+import "../deposits-manager/DepositsManagerLogic.sol";
+import "../jackpot-manager/JackpotManagerLogic.sol";
+import "./IncentiveLayerState.sol";
+import "../../interface/IDisputeResolutionLayer.sol";
+import "../../interface/IGameMaker.sol";
+
+contract IncentiveLayerLogic is IncentiveLayerState, RewardsManagerLogic, DepositsManagerLogic, JackpotManagerLogic {
 
     // Events
     

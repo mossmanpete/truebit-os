@@ -1,17 +1,20 @@
 pragma solidity ^0.5.0;
 
-import "./TRU.sol";
-import "../dispute/Filesystem.sol";
-import "./ExchangeRateOracle.sol";
+import "../TRU.sol";
+import "../../dispute/Filesystem.sol";
+import "../ExchangeRateOracle.sol";
+import "../rewards-manager/RewardsManagerState.sol";
+import "../deposits-manager/DepositsManagerState.sol";
+import "../jackpot-manager/JackpotManagerState.sol";
 
-contract IncentiveLayerState {
-    uint private numTasks = 0;
-    uint private forcedErrorThreshold = 500000; // should mean 100000/1000000 probability
-    uint private taxMultiplier = 5;
+contract IncentiveLayerState is RewardsManagerState, DepositsManagerState, JackpotManagerState {
+    uint public numTasks = 0;
+    uint public forcedErrorThreshold = 500000; // should mean 100000/1000000 probability
+    uint public taxMultiplier = 5;
 
-    mapping(bytes32 => Task) private tasks;
-    mapping(bytes32 => Solution) private solutions;
-    mapping(bytes32 => VMParameters) private vmParams;
+    mapping(bytes32 => Task) tasks;
+    mapping(bytes32 => Solution) solutions;
+    mapping(bytes32 => VMParameters) vmParams;
     mapping (bytes32 => uint) challenges;    
 
     ExchangeRateOracle oracle;
@@ -92,10 +95,5 @@ contract IncentiveLayerState {
         bytes32 sizeHash;
         bytes32 nameHash;
     }
-
-    mapping(bytes32 => Task) private tasks;
-    mapping(bytes32 => Solution) private solutions;
-    mapping(bytes32 => VMParameters) private vmParams;
-    mapping (bytes32 => uint) challenges;    
     
 }

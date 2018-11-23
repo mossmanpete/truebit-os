@@ -1,15 +1,11 @@
 pragma solidity ^0.5.0;
 
-import "../openzeppelin-solidity/SafeMath.sol";
-import "./TRU.sol";
+import "../../openzeppelin-solidity/SafeMath.sol";
+import "../TRU.sol";
+import "./RewardsManagerState.sol";
 
-contract RewardsManager {
+contract RewardsManagerLogic is RewardsManagerState {
     using SafeMath for uint;
-
-    mapping(bytes32 => uint) public rewards;
-    mapping(bytes32 => uint) public taxes;
-    address public owner;
-    TRU public token;
 
     event RewardDeposit(bytes32 indexed task, address who, uint amount, uint tax);
     event RewardClaimed(bytes32 indexed task, address who, uint amount, uint tax);
@@ -17,11 +13,6 @@ contract RewardsManager {
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
-    }
-
-    constructor(address payable _tru) public {
-        owner = msg.sender;
-        token = TRU(_tru);
     }
 
     function getTaskReward(bytes32 taskID) public view returns (uint) {
