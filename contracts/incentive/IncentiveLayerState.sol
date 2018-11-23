@@ -1,5 +1,9 @@
 pragma solidity ^0.5.0;
 
+import "./TRU.sol";
+import "../dispute/Filesystem.sol";
+import "./ExchangeRateOracle.sol";
+
 contract IncentiveLayerState {
     uint private numTasks = 0;
     uint private forcedErrorThreshold = 500000; // should mean 100000/1000000 probability
@@ -93,10 +97,5 @@ contract IncentiveLayerState {
     mapping(bytes32 => Solution) private solutions;
     mapping(bytes32 => VMParameters) private vmParams;
     mapping (bytes32 => uint) challenges;    
-
-    ExchangeRateOracle oracle;
-    address disputeResolutionLayer; //using address type because in some cases it is IGameMaker, and others IDisputeResolutionLayer
-    Filesystem fs;
-    TRU tru;
     
 }
