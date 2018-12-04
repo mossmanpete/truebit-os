@@ -22,7 +22,7 @@ contract Ownable {
    * account.
    */
   constructor() public {
-    owner = msg.sender;
+     owner = msg.sender;
   }
 
   /**
