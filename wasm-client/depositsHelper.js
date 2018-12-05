@@ -10,10 +10,9 @@ module.exports = async (web3, incentiveLayer, tru, account, minDeposit) => {
         let difference = minDeposit - currentDeposit
 
         if (difference > 0) {
-            // console.log("allowance", difference, incentiveLayer.address)
-            await tru.approve(incentiveLayer.address, difference, { from: account })            
-            // console.log("deposited", num.toString())
-            await incentiveLayer.makeDeposit(difference, { from: account })
+            //console.log("allowance", difference, incentiveLayer.address)
+            await tru.approve(incentiveLayer.address, difference, { from: account })
+            await incentiveLayer.makeDeposit(difference, { from: account })            
         }
     }
 }

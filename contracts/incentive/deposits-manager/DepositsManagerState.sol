@@ -9,4 +9,5 @@ contract DepositsManagerState {
     mapping(address => uint) public deposits;
     address public owner;
     TRU public token;    
+    
 }

@@ -25,10 +25,14 @@ async function deployContract(name, options = {}, args = []) {
         .send(options)
 }
 
-function exportContract(contract) {
+function exportContract(contract, optionalAbi = null) {
+
+    let abi = contract._jsonInterface
+    if (optionalAbi) abi = optionalAbi
+    
     return {
         address: contract._address,
-        abi: contract._jsonInterface
+        abi: abi
     }
 }
 
@@ -51,7 +55,7 @@ async function deploy() {
     let incentiveLayerLogic = await deployContract('IncentiveLayerLogic', {from: accounts[0], gas: 5000000})
     await incentiveLayer.methods.setLogicContract(incentiveLayerLogic._address).send({from: accounts[0], gas: 300000})
     
-    // tru.methods.transferOwnership(incentiveLayer._address).send({from: accounts[0], gas: 1000000})
+    //tru.methods.transferOwnership(incentiveLayerLogic._address).send({from: accounts[0], gas: 1000000})
 
     let wait = 0
     if (networkName == "kovan") wait = 10000
@@ -65,7 +69,7 @@ async function deploy() {
         interactive: exportContract(interactive),
         tru: exportContract(tru),
         exchangeRateOracle: exportContract(exchangeRateOracle),
-        incentiveLayer: exportContract(incentiveLayer)
+        incentiveLayer: exportContract(incentiveLayer, incentiveLayerLogic._jsonInterface)
     }))
 
     // Set exchange rate oracle for testing, main net should come from external data source (dex, oraclize, etc..)

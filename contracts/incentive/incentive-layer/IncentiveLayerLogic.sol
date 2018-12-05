@@ -1,8 +1,8 @@
 pragma solidity ^0.5.0;
 
 import "../rewards-manager/RewardsManagerLogic.sol";
-import "../deposits-manager/DepositsManagerLogic.sol";
 import "../jackpot-manager/JackpotManagerLogic.sol";
+import "../deposits-manager/DepositsManagerLogic.sol";
 import "./IncentiveLayerState.sol";
 import "../../interface/IDisputeResolutionLayer.sol";
 import "../../interface/IGameMaker.sol";

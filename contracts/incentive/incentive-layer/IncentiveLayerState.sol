@@ -7,7 +7,8 @@ import "../rewards-manager/RewardsManagerState.sol";
 import "../deposits-manager/DepositsManagerState.sol";
 import "../jackpot-manager/JackpotManagerState.sol";
 
-contract IncentiveLayerState is RewardsManagerState, DepositsManagerState, JackpotManagerState {
+contract IncentiveLayerState is RewardsManagerState, JackpotManagerState, DepositsManagerState {
+    
     uint public numTasks = 0;
     uint public forcedErrorThreshold = 500000; // should mean 100000/1000000 probability
     uint public taxMultiplier = 5;
