@@ -68,11 +68,7 @@ async function deploy() {
 
     let depositsManager = await deployContract('DepositsManager', {from: accounts[0], gas: 1000000}, [tru._address, incentiveLayer._address])
 
-    console.log("DM: " + depositsManager._address)
-    
     let rewardsManager = await deployContract('RewardsManager', {from: accounts[0], gas: 3000000}, [tru._address])
-
-    console.log("RM: " + rewardsManager._address)
 
     await incentiveLayer.methods.setManagers(depositsManager._address, rewardsManager._address).send({from: accounts[0], gas: 100000})
     
@@ -92,7 +88,9 @@ async function deploy() {
         tru: exportContract(tru),
         exchangeRateOracle: exportContract(exchangeRateOracle),
         incentiveLayer: exportContract(incentiveLayer),
-	jackpotManager: exportContract(jackpotManager)
+	jackpotManager: exportContract(jackpotManager),
+	depositsManager: exportContract(depositsManager),
+	rewardsManager: exportContract(rewardsManager)
     }))
 
     // Set exchange rate oracle for testing, main net should come from external data source (dex, oraclize, etc..)

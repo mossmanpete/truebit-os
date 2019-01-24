@@ -17,7 +17,8 @@ function setup(web3) {
         let incentiveLayer = await contract(httpProvider, config['incentiveLayer'])
         let fileSystem = await contract(httpProvider, config['fileSystem'])
         let tru = await contract(httpProvider, config['tru'])
-        return [incentiveLayer, fileSystem, tru]
+	let depositsManager = await contract(httpProvider, config['depositsManager'])
+        return [incentiveLayer, fileSystem, tru, depositsManager]
     })()
 }
 
@@ -71,6 +72,7 @@ module.exports = async (web3, logger, mcFileSystem) => {
     incentiveLayer = contracts[0]
     tbFileSystem = contracts[1]
     tru = contracts[2]
+    depositsManager = contracts[3]
 
     async function uploadOnchain(codeData, options) {
         return merkleComputer.uploadOnchain(codeData, web3, options)
@@ -288,7 +290,8 @@ module.exports = async (web3, logger, mcFileSystem) => {
         
         //bond minimum deposit
         task["minDeposit"] = web3.utils.toWei(task.minDeposit, 'ether')
-        await depositsHelper(web3, incentiveLayer, tru, task.from, task.minDeposit)
+
+        await depositsHelper(web3, depositsManager, tru, task.from, task.minDeposit)
 	
 	logger.log({ level: 'info', message: `Minimum deposit was met`})
 

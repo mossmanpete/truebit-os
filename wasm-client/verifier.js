@@ -24,7 +24,8 @@ function setup(web3) {
         let disputeResolutionLayer = await contract(httpProvider, config['interactive'])
         let tru = await contract(httpProvider, config['tru'])
 	let jackpotManager = await contract(httpProvider, config['jackpotManager'])
-        return [incentiveLayer, fileSystem, disputeResolutionLayer, tru, jackpotManager]
+	let depositsManager = await contract(httpProvider, config['depositsManager'])
+        return [incentiveLayer, fileSystem, disputeResolutionLayer, tru, jackpotManager, depositsManager]
     })()
 }
 
@@ -167,7 +168,7 @@ module.exports = {
 
             if (!taskData) return
 
-            await depositsHelper(web3, incentiveLayer, tru, account, taskData.minDeposit)
+            await depositsHelper(web3, depositsManager, tru, account, taskData.minDeposit)
             if (taskData.intent0) {
                 await incentiveLayer.revealIntent(taskID, taskData.solverHash0, taskData.solverHash1, taskData.intent0, { from: account, gas: 1000000 })
             } else if (taskData.intent1) {

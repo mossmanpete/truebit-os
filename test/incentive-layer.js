@@ -12,6 +12,7 @@ function setup(web3) {
 	return Promise.all([
 	    contract(httpProvider, config['incentiveLayer']),
 	    contract(httpProvider, config['tru']),
+	    contract(httpProvider, config['depositsManager'])
 	])
     })()
 }
@@ -19,7 +20,7 @@ function setup(web3) {
 describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
     this.timeout(60000)
 
-    let incentiveLayer, tru, taskGiver, solver, verifier, accounts, dummy
+    let incentiveLayer, tru, taskGiver, solver, verifier, accounts, dummy, depositsManager
     let minDeposit, taskID, randomBits, randomBitsHash, solution0Hash, solution1Hash, web3
 
     before(async () => {
@@ -31,6 +32,7 @@ describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
 
 	incentiveLayer = contracts[0]
 	tru = contracts[1]
+	depositsManager = contracts[2]
 
 	taskGiver = os.accounts[0]
 	solver = os.accounts[1]
@@ -47,7 +49,7 @@ describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
 	solution1Hash = os.web3.utils.soliditySha3(0x1, 0x1, 0x1, 0x1)
 
 	for(let account of accounts) {
-	    await tru.approve(incentiveLayer.address, minDeposit, { from: account })
+	    await tru.approve(depositsManager.address, minDeposit, { from: account })
 	}
 
     })
@@ -56,9 +58,9 @@ describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
 
 	for(let account of accounts) {
 	   
-	    await incentiveLayer.makeDeposit(minDeposit, { from: account })
+	    await depositsManager.makeDeposit(minDeposit, { from: account })
 	    
-	    let deposit = (await incentiveLayer.getDeposit.call(account)).toNumber()
+	    let deposit = (await depositsManager.getDeposit.call(account)).toNumber()
 
 	    assert(deposit > 1)
 	    
@@ -67,7 +69,7 @@ describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
     })
 
     it("should reject making a deposit of 42 with empty account", async () => {
-	return incentiveLayer.makeDeposit(42, { from: dummy })
+	return depositsManager.makeDeposit(42, { from: dummy })
 	    .then(
 		() => Promise.reject(new Error('Expected method to reject')),
 		err => assert(err instanceof Error)
@@ -75,7 +77,7 @@ describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
     })    
 
     it("should reject making a deposit of zero", async () => {
-	return incentiveLayer.makeDeposit(minDeposit, { from: dummy })
+	return depositsManager.makeDeposit(minDeposit, { from: dummy })
 	    .then(
 		() => Promise.reject(new Error('Expected method to reject')),
 		err => assert(err instanceof Error)

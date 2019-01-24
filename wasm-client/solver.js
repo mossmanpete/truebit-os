@@ -22,7 +22,8 @@ function setup(web3) {
         fileSystem = await contract(httpProvider, config['fileSystem'])
         tru = await contract(httpProvider, config['tru'])
         disputeResolutionLayer = await contract(httpProvider, config['interactive'])
-        return [incentiveLayer, fileSystem, disputeResolutionLayer, tru]
+	depositsManager = await contract(httpProvider, config['depositsManager'])
+        return [incentiveLayer, fileSystem, disputeResolutionLayer, tru, depositsManager]
     })()
 }
 
@@ -108,7 +109,7 @@ module.exports = {
 
                     let secret = "0x" + helpers.makeSecret(taskID)
 
-                    await depositsHelper(web3, incentiveLayer, tru, account, minDeposit)
+                    await depositsHelper(web3, depositsManager, tru, account, minDeposit)
 
                     // console.log("secret", secret, web3.utils.soliditySha3(secret))
                     await incentiveLayer.registerForTask(taskID, web3.utils.soliditySha3(secret), { from: account, gas: 500000 })
