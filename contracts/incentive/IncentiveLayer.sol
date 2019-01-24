@@ -130,17 +130,18 @@ contract IncentiveLayer {
 		 address _exchangeRateOracle,
 		 address _disputeResolutionLayer,
 		 address fs_addr,
-		 address _jackpotManager,
-		 address payable _depositsManager,
-		 address _rewardsManager
+		 address _jackpotManager
 		) public {
       disputeResolutionLayer = _disputeResolutionLayer;
       oracle = ExchangeRateOracle(_exchangeRateOracle);
       fs = Filesystem(fs_addr);
       tru = TRU(_TRU);
       jackpotManager = _jackpotManager;
+    }
+
+    function setManagers(address payable _depositsManager, address _rewardsManager) public {
       depositsManager = DepositsManager(_depositsManager);
-      rewardsManager = RewardsManager(_rewardsManager);
+      rewardsManager = RewardsManager(_rewardsManager);      
     }
 
     function getBalance(address addr) public view returns (uint) {

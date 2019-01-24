@@ -65,6 +65,17 @@ async function deploy() {
 	 jackpotManager._address
 	]
     )
+
+    let depositsManager = await deployContract('DepositsManager', {from: accounts[0], gas: 1000000}, [tru._address, incentiveLayer._address])
+
+    console.log("DM: " + depositsManager._address)
+    
+    let rewardsManager = await deployContract('RewardsManager', {from: accounts[0], gas: 3000000}, [tru._address])
+
+    console.log("RM: " + rewardsManager._address)
+
+    await incentiveLayer.methods.setManagers(depositsManager._address, rewardsManager._address).send({from: accounts[0], gas: 100000})
+    
     
     // tru.methods.transferOwnership(incentiveLayer._address).send({from: accounts[0], gas: 1000000})
 
