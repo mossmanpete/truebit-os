@@ -28,7 +28,7 @@ contract RewardsManager {
         return rewards[taskID];
     }
 
-    function depositReward(bytes32 taskID, uint reward, uint tax) internal returns (bool) {
+    function depositReward(bytes32 taskID, uint reward, uint tax) public returns (bool) {
         // require(token.allowance(msg.sender, address(this)) >= reward + tax);
         // token.transferFrom(msg.sender, address(this), reward + tax);
 
@@ -38,7 +38,7 @@ contract RewardsManager {
         return true; 
     }
 
-    function payReward(bytes32 taskID, address to) internal returns (bool) {
+    function payReward(bytes32 taskID, address to) public returns (bool) {
         require(rewards[taskID] > 0);
         uint payout = rewards[taskID];
         rewards[taskID] = 0;

@@ -15,7 +15,9 @@ interface Callback {
     function cancelled(bytes32 taskID) external;
 }
 
-contract IncentiveLayer is DepositsManager, RewardsManager {
+contract IncentiveLayer {
+
+    using SafeMath for uint;  
 
     uint private numTasks = 0;
     uint private taxMultiplier = 5;
@@ -120,17 +122,25 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
     Filesystem fs;
     TRU tru;
     address jackpotManager; //using address because sometimes it is IForcedError, and others BaseJackpotManager
+    DepositsManager depositsManager;
+    RewardsManager rewardsManager;
 
-    constructor (address payable _TRU, address _exchangeRateOracle, address _disputeResolutionLayer, address fs_addr, address _jackpotManager) 
-        DepositsManager(_TRU)
-        RewardsManager(_TRU)
-        public 
-    {
-        disputeResolutionLayer = _disputeResolutionLayer;
-        oracle = ExchangeRateOracle(_exchangeRateOracle);
-        fs = Filesystem(fs_addr);
-        tru = TRU(_TRU);
-	jackpotManager = _jackpotManager;
+    constructor (
+		 address payable _TRU,
+		 address _exchangeRateOracle,
+		 address _disputeResolutionLayer,
+		 address fs_addr,
+		 address _jackpotManager,
+		 address payable _depositsManager,
+		 address _rewardsManager
+		) public {
+      disputeResolutionLayer = _disputeResolutionLayer;
+      oracle = ExchangeRateOracle(_exchangeRateOracle);
+      fs = Filesystem(fs_addr);
+      tru = TRU(_TRU);
+      jackpotManager = _jackpotManager;
+      depositsManager = DepositsManager(_depositsManager);
+      rewardsManager = RewardsManager(_rewardsManager);
     }
 
     function getBalance(address addr) public view returns (uint) {
@@ -144,8 +154,9 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
     // @return – the user's deposit bonded for the task.
     function bondDeposit(bytes32 taskID, address account, uint amount) private returns (uint) {
         Task storage task = tasks[taskID];
-        require(deposits[account] >= amount);
-        deposits[account] = deposits[account].sub(amount);
+	uint d = DepositsManager(depositsManager).getDeposit(account);
+        require(d >= amount);
+	depositsManager.withdrawDepositBond(amount, account);
         task.bondedDeposits[account] = task.bondedDeposits[account].add(amount);
         emit DepositBonded(taskID, account, amount);
         return task.bondedDeposits[account];
@@ -160,9 +171,8 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
         require(task.state == State.TaskFinalized || task.state == State.TaskTimeout);
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
-        deposits[msg.sender] = deposits[msg.sender].add(bondedDeposit);
-        emit DepositUnbonded(taskID, msg.sender, bondedDeposit);
-        
+	depositsManager.returnDepositBond(bondedDeposit, msg.sender);
+        emit DepositUnbonded(taskID, msg.sender, bondedDeposit);        
         return bondedDeposit;
     }
 
@@ -181,9 +191,12 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
         delete task.bondedDeposits[account];
         if (bondedDeposit > toOpponent + task.cost*2) {
             BaseJackpotManager(jackpotManager).increaseJackpot(bondedDeposit - toOpponent - task.cost*2);
-            deposits[task.owner] += task.cost*2;
+	    depositsManager.returnDepositBond(task.cost*2, task.owner);
+            //deposits[task.owner] += task.cost*2;
         }
-        deposits[opponent] += toOpponent;
+
+	depositsManager.returnDepositBond(toOpponent, opponent);
+        //deposits[opponent] += toOpponent;
         return bondedDeposit;
     }
 
@@ -229,10 +242,10 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
         t.tax = minDeposit * taxMultiplier;
         t.cost = reward + t.tax;
         
-        require(deposits[msg.sender] >= reward + t.tax);
-        deposits[msg.sender] = deposits[msg.sender].sub(reward + t.tax);
+        require(depositsManager.getDeposit(msg.sender) >= reward + t.tax);
+	depositsManager.withdrawRewardAndTax(msg.sender, reward, t.tax);
     
-        depositReward(id, reward, t.tax);
+        rewardsManager.depositReward(id, reward, t.tax);
         BaseJackpotManager(jackpotManager).increaseJackpot(t.tax);
         
         t.initTaskHash = initTaskHash;
@@ -622,7 +635,7 @@ contract IncentiveLayer is DepositsManager, RewardsManager {
         t.state = State.TaskFinalized;
         t.finalityCode = 1; // Task has been completed
 
-        payReward(taskID, t.selectedSolver);
+	rewardsManager.payReward(taskID, t.selectedSolver);
         bool ok;
         bytes memory res;
         (ok, res) = t.owner.call(abi.encodeWithSignature("solved(bytes32,bytes32[])", taskID, files));

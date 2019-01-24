@@ -9,14 +9,16 @@ contract DepositsManager {
     mapping(address => uint) public deposits;
     address public owner;
     TRU public token;
+    address public truebit;
 
     event DepositMade(address who, uint amount);
     event DepositWithdrawn(address who, uint amount);
 
     // @dev – the constructor
-    constructor(address payable _tru) public {
+    constructor(address payable _tru, address _truebit) public {
         owner = msg.sender;
         token = TRU(_tru);
+	truebit = _truebit;
     }
     
     // @dev - fallback does nothing since we only accept TRU tokens
@@ -54,6 +56,27 @@ contract DepositsManager {
 
         emit DepositWithdrawn(msg.sender, amount);
         return deposits[msg.sender];
+    }
+
+    function withdrawDepositBond(uint amount, address account) public returns (uint) {
+      require(msg.sender == truebit);
+      deposits[account] = deposits[account].sub(amount);
+    }
+
+    function returnDepositBond(uint _deposit, address account) public payable returns (uint) {
+	require(_deposit > 0);
+        require(token.allowance(msg.sender, account) >= _deposit);
+        token.transferFrom(msg.sender, account, _deposit);
+
+        deposits[account] = deposits[account].add(_deposit);
+        return deposits[account];
+      
+    }
+
+    function withdrawRewardAndTax(address account, uint reward, uint tax) public returns (uint) {
+      uint amount = reward + tax;
+      deposits[account] = deposits[account].sub(amount);
+      return amount;
     }
 
 }
