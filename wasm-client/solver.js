@@ -213,7 +213,7 @@ module.exports = {
             let taskID = result.args.taskID	   
 	    
             if (tasks[taskID]) {
-		        delete tasks[taskID]
+		delete tasks[taskID]
                 await incentiveLayer.unbondDeposit(taskID, {from: account, gas: 100000})
                 logger.log({
                     level: 'info',
@@ -265,7 +265,7 @@ module.exports = {
                     lowStep: lowStep,
                     highStep: highStep,
                     taskID: taskID
-                }		    
+		}
 
                 await disputeResolutionLayer.initialize(
                     gameID,
@@ -492,8 +492,6 @@ module.exports = {
 
             if (await incentiveLayer.endChallengePeriod.call(taskID)) {
 
-                // console.log("Ending challenge")
-
                 working(taskID)
                 await incentiveLayer.endChallengePeriod(taskID, {from:account, gas: 100000})
 
@@ -532,9 +530,15 @@ module.exports = {
 	    
             if (await incentiveLayer.canFinalizeTask.call(taskID)) {
 
-                // console.log("Tax should be", (await incentiveLayer.getTax.call(taskID)).toString())
+                // console.log("Tax should be", (await incentiveLayer.getTax.call(taskID)).toString())		
 
                 working(taskID)
+		
+                logger.log({
+                    level: 'info',
+                    message: `SOLVER: Finalizing task ${taskID}`
+                })		
+
                 await incentiveLayer.finalizeTask(taskID, {from:account, gas:1000000})
 
                 logger.log({

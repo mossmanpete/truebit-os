@@ -215,12 +215,14 @@ module.exports = {
             let taskID = result.args.taskID	   
 	    
             if (tasks[taskID]) {
+		
                 await incentiveLayer.unbondDeposit(taskID, {from: account, gas: 100000})
-		        delete tasks[taskID]
+		delete tasks[taskID]
+		
                 logger.log({
                     level: 'info',
                     message: `VERIFIER: Task ${taskID} finalized. Tried to unbond deposits.`
-                  })
+                })
 
             }
 

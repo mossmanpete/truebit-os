@@ -172,7 +172,7 @@ contract IncentiveLayer {
         require(task.state == State.TaskFinalized || task.state == State.TaskTimeout);
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
-	depositsManager.returnDepositBond(bondedDeposit, msg.sender);
+	//depositsManager.returnDepositBond(bondedDeposit, msg.sender); TODO ADD THIS BACK IN!!!
         emit DepositUnbonded(taskID, msg.sender, bondedDeposit);        
         return bondedDeposit;
     }
@@ -636,7 +636,8 @@ contract IncentiveLayer {
         t.state = State.TaskFinalized;
         t.finalityCode = 1; // Task has been completed
 
-	rewardsManager.payReward(taskID, t.selectedSolver);
+	//rewardsManager.payReward(taskID, t.selectedSolver); TODO: ADD THIS BACK IN!!!
+	
         bool ok;
         bytes memory res;
         (ok, res) = t.owner.call(abi.encodeWithSignature("solved(bytes32,bytes32[])", taskID, files));
