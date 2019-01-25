@@ -45,6 +45,30 @@ contract DepositsManager {
         return deposits[msg.sender];
     }
 
+    function bondDeposit(address account, uint amount) public returns (uint) {
+      	require(msg.sender == truebit);
+        require(deposits[account] >= amount);
+
+	deposits[account] = deposits[account].sub(amount);
+	deposits[address(this)] = deposits[address(this)].add(amount);
+    }
+
+    function unbondDeposit(address account, uint amount) public returns (uint) {
+        require(msg.sender == truebit);
+	require(deposits[address(this)] >= amount);
+
+	deposits[address(this)] = deposits[address(this)].sub(amount);
+	deposits[account] = deposits[account].add(amount);
+    }
+
+    function transferBondedDeposit(address to, uint amount) public returns (uint) {
+      require(msg.sender == truebit);
+      require(deposits[address(this)] >= amount);
+      
+      deposits[address(this)] = deposits[address(this)].sub(amount);
+      deposits[to] = deposits[to].add(amount);
+    }
+
     // @dev - allows a user to withdraw TRU from their deposit
     // @param amount - how much TRU to withdraw
     // @return - the user's updated deposit
@@ -56,21 +80,6 @@ contract DepositsManager {
 
         emit DepositWithdrawn(msg.sender, amount);
         return deposits[msg.sender];
-    }
-
-    function withdrawDepositBond(uint amount, address account) public returns (uint) {
-      require(msg.sender == truebit);
-      deposits[account] = deposits[account].sub(amount);
-    }
-
-    function returnDepositBond(uint _deposit, address account) public payable returns (uint) {
-	require(_deposit > 0);
-        require(token.allowance(msg.sender, account) >= _deposit);
-        token.transferFrom(msg.sender, account, _deposit);
-
-        deposits[account] = deposits[account].add(_deposit);
-        return deposits[account];
-      
     }
 
     function withdrawRewardAndTax(address account, uint reward, uint tax) public returns (uint) {

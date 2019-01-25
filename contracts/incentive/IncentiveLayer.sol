@@ -157,7 +157,7 @@ contract IncentiveLayer {
         Task storage task = tasks[taskID];
 	uint d = DepositsManager(depositsManager).getDeposit(account);
         require(d >= amount);
-	depositsManager.withdrawDepositBond(amount, account);
+	depositsManager.bondDeposit(account, amount);
         task.bondedDeposits[account] = task.bondedDeposits[account].add(amount);
         emit DepositBonded(taskID, account, amount);
         return task.bondedDeposits[account];
@@ -172,7 +172,7 @@ contract IncentiveLayer {
         require(task.state == State.TaskFinalized || task.state == State.TaskTimeout);
         uint bondedDeposit = task.bondedDeposits[msg.sender];
         delete task.bondedDeposits[msg.sender];
-	//depositsManager.returnDepositBond(bondedDeposit, msg.sender); TODO ADD THIS BACK IN!!!
+	depositsManager.unbondDeposit(msg.sender, bondedDeposit);       
         emit DepositUnbonded(taskID, msg.sender, bondedDeposit);        
         return bondedDeposit;
     }
@@ -192,12 +192,12 @@ contract IncentiveLayer {
         delete task.bondedDeposits[account];
         if (bondedDeposit > toOpponent + task.cost*2) {
             BaseJackpotManager(jackpotManager).increaseJackpot(bondedDeposit - toOpponent - task.cost*2);
-	    depositsManager.returnDepositBond(task.cost*2, task.owner);
-            //deposits[task.owner] += task.cost*2;
+
+	    depositsManager.transferBondedDeposit(msg.sender, task.cost*2);
         }
 
-	depositsManager.returnDepositBond(toOpponent, opponent);
-        //deposits[opponent] += toOpponent;
+	depositsManager.transferBondedDeposit(opponent, toOpponent);
+
         return bondedDeposit;
     }
 
