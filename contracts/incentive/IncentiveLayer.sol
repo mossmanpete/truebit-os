@@ -6,7 +6,7 @@ import "./TRU.sol";
 import "../filesystem/Filesystem.sol";
 import "./ExchangeRateOracle.sol";
 import "./RewardsManager.sol";
-import "./IncentiveRegistry.sol";
+import "../TruebitRegistry.sol";
 
 import "../interface/IGameMaker.sol";
 import "../interface/IDisputeResolutionLayer.sol";
@@ -281,7 +281,7 @@ contract IncentiveLayer {
     }
 
     function getContracts() internal view returns (Contracts memory) {
-	(address c0, address c1, address c2, address c3, address payable c4, address c5, address c6, address c7)  = IncentiveRegistry(registry).getContracts();	
+	(address c0, address c1, address c2, address c3, address payable c4, address c5, address c6, address c7)  = TruebitRegistry(registry).getContracts();	
 	return Contracts(c0, c1, c2, c3, c4, c5, c6, c7);
     }
 

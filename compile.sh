@@ -13,6 +13,8 @@ solc --abi --optimize --overwrite --bin -o ../build dispute/Interpreter.sol
 solc --abi --optimize --overwrite --bin -o ../build dispute/Judge.sol
 solc --abi --optimize --overwrite --bin -o ../build dispute/Merkle.sol
 
+solc --abi --optimize --overwrite --bin -o ../build TruebitRegistry.sol
+
 solc --abi --optimize --overwrite --bin -o ../build --allow-paths /interface,  incentive/IncentiveLayer.sol
 
 

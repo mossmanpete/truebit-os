@@ -38,10 +38,13 @@ async function deploy() {
     console.log("Writing to", filename)
 
     let accounts = await web3.eth.getAccounts()
-    let fileSystem = await deployContract('Filesystem', {from: accounts[0], gas: 5500000})
+
+    let registry = await deployContract('TruebitRegistry', {from: accounts[0], gas: 300000})
+    
+    let filesystem = await deployContract('Filesystem', {from: accounts[0], gas: 5500000})
     let judge = await deployContract('Judge', {from: accounts[0], gas: 5600000})
     
-    let interactive = await deployContract('Interactive', {from: accounts[0], gas: 5500000}, [judge._address])
+    let disputeResolutionLayer = await deployContract('Interactive', {from: accounts[0], gas: 5500000}, [judge._address])
 
     let tru = await deployContract('TRU', {from: accounts[0], gas: 2000000})
     let exchangeRateOracle = await deployContract('ExchangeRateOracle', {from: accounts[0], gas: 1000000})
@@ -55,23 +58,22 @@ async function deploy() {
 	//jackpotManager = await deployContract('AlwaysJackpotManager', {from: accounts[0], gas: 500000}, [tru._address])
     }
     
-    let incentiveLayer = await deployContract(
-	'IncentiveLayer',
-	{from: accounts[0], gas: 5200000},
-	[tru._address,
-	 exchangeRateOracle._address,
-	 interactive._address,
-	 fileSystem._address,
-	 jackpotManager._address
-	]
-    )
+    let incentiveLayer = await deployContract('IncentiveLayer', {from: accounts[0], gas: 5200000}, [registry._address])
 
     let depositsManager = await deployContract('DepositsManager', {from: accounts[0], gas: 1000000}, [tru._address, incentiveLayer._address])
 
     let rewardsManager = await deployContract('RewardsManager', {from: accounts[0], gas: 3000000}, [tru._address])
 
-    await incentiveLayer.methods.setManagers(depositsManager._address, rewardsManager._address).send({from: accounts[0], gas: 100000})
-    
+    await registry.methods.setContracts(
+	tru._address,
+	exchangeRateOracle._address,
+	filesystem._address,
+	jackpotManager._address,
+	depositsManager._address,
+	rewardsManager._address,
+	incentiveLayer._address,
+	disputeResolutionLayer._address
+    ).send({from: accounts[0], gas: 300000})
     
     // tru.methods.transferOwnership(incentiveLayer._address).send({from: accounts[0], gas: 1000000})
 
@@ -82,9 +84,9 @@ async function deploy() {
 
     fs.writeFileSync(filename, JSON.stringify({
         WAIT_TIME: wait,
-        fileSystem: exportContract(fileSystem),
+        fileSystem: exportContract(filesystem),
         judge: exportContract(judge),
-        interactive: exportContract(interactive),
+        interactive: exportContract(disputeResolutionLayer),
         tru: exportContract(tru),
         exchangeRateOracle: exportContract(exchangeRateOracle),
         incentiveLayer: exportContract(incentiveLayer),

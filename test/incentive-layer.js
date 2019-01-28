@@ -88,7 +88,7 @@ describe('Truebit Incentive Layer Smart Contract Unit Tests', function() {
 	const maxDifficulty = 1
 	const reward = 10000
 	
-	let tx = await incentiveLayer.createTask(0x0, 0, 0x0, maxDifficulty, reward, {from: taskGiver, gas: 300000})
+	let tx = await incentiveLayer.createTask(0x0, 0, 0x0, maxDifficulty, reward, {from: taskGiver, gas: 500000})
 
 	let log = tx.logs.find(log => log.event === 'TaskCreated')
 
