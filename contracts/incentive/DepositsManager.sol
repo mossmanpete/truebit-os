@@ -62,11 +62,11 @@ contract DepositsManager {
     }
 
     function transferBondedDeposit(address to, uint amount) public returns (uint) {
-      require(msg.sender == truebit);
-      require(deposits[address(this)] >= amount);
+	require(msg.sender == truebit);
+	require(deposits[address(this)] >= amount);
       
-      deposits[address(this)] = deposits[address(this)].sub(amount);
-      deposits[to] = deposits[to].add(amount);
+	deposits[address(this)] = deposits[address(this)].sub(amount);
+	deposits[to] = deposits[to].add(amount);
     }
 
     // @dev - allows a user to withdraw TRU from their deposit
@@ -83,9 +83,11 @@ contract DepositsManager {
     }
 
     function withdrawRewardAndTax(address account, uint reward, uint tax) public returns (uint) {
-      uint amount = reward + tax;
-      deposits[account] = deposits[account].sub(amount);
-      return amount;
+	require(msg.sender == truebit);
+	uint amount = reward + tax;
+	require(deposits[account] >= amount);
+	deposits[account] = deposits[account].sub(amount);
+	return amount;
     }
 
 }
