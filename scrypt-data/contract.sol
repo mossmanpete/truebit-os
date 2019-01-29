@@ -23,7 +23,10 @@ interface TrueBit {
                                   uint8 stack, uint8 mem, uint8 globals, uint8 table, uint8 call, uint32 limit) external returns (bytes32);
    function requireFile(bytes32 id, bytes32 hash, /* Storage */ uint st) external;
    function commitRequiredFiles(bytes32 id) external;
-   function makeDeposit(uint _deposit) external payable returns (uint);
+}
+
+interface DepositsManager {
+     function makeDeposit(uint _deposit) external payable returns (uint);
 }
 
 interface TRU {
@@ -41,6 +44,7 @@ contract Scrypt {
    TrueBit truebit;
    Filesystem filesystem;
    TRU tru;
+   DepositsManager depositsManager;
 
    bytes32 bundleID;
    bytes32 codeFileID;
@@ -50,13 +54,14 @@ contract Scrypt {
    mapping (bytes32 => bytes) task_to_string;
    mapping (bytes => bytes32) result;
 
-   constructor(address tb, address tru_, address fs, bytes32 _bundleID, bytes32 _codeFileID, bytes32 _initHash) public {
+   constructor(address tb, address tru_, address fs, address _depositsManager, bytes32 _bundleID, bytes32 _codeFileID, bytes32 _initHash) public {
        truebit = TrueBit(tb);
        tru = TRU(tru_);
        filesystem = Filesystem(fs);
        bundleID = _bundleID;
        codeFileID = _codeFileID;
        initHash = _initHash;
+       depositsManager = DepositsManager(_depositsManager);
    }
 
    function formatData(bytes memory data) public pure returns (bytes32[] memory output) {
@@ -90,8 +95,8 @@ contract Scrypt {
       
       filesystem.finalizeBundle(bundleID, codeFileID);
       
-      tru.approve(address(truebit), 1000);
-      truebit.makeDeposit(1000);
+      tru.approve(address(depositsManager), 1000);
+      depositsManager.makeDeposit(1000);
       // string memory bstr = ;
       bytes32 task = truebit.createTaskWithParams(filesystem.getInitHash(bundleID), 1, bundleID, 1, 1, 20, 20, 8, 20, 10, 5000);
       truebit.requireFile(task, filesystem.hashName("output.data"), 0);
@@ -116,8 +121,8 @@ contract Scrypt {
       
       filesystem.finalizeBundle(bundleID, codeFileID);
       
-      tru.approve(address(truebit), 1000);
-      truebit.makeDeposit(1000);
+      tru.approve(address(depositsManager), 1000);
+      depositsManager.makeDeposit(1000);
 
       return filesystem.getInitHash(bundleID);
    }

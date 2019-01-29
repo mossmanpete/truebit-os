@@ -9,14 +9,16 @@ contract DepositsManager {
     mapping(address => uint) public deposits;
     address public owner;
     TRU public token;
+    address public truebit;
 
     event DepositMade(address who, uint amount);
     event DepositWithdrawn(address who, uint amount);
 
     // @dev – the constructor
-    constructor(address payable _tru) public {
+    constructor(address payable _tru, address _truebit) public {
         owner = msg.sender;
         token = TRU(_tru);
+	truebit = _truebit;
     }
     
     // @dev - fallback does nothing since we only accept TRU tokens
@@ -43,6 +45,30 @@ contract DepositsManager {
         return deposits[msg.sender];
     }
 
+    function bondDeposit(address account, uint amount) public returns (uint) {
+      	require(msg.sender == truebit);
+        require(deposits[account] >= amount);
+
+	deposits[account] = deposits[account].sub(amount);
+	deposits[address(this)] = deposits[address(this)].add(amount);
+    }
+
+    function unbondDeposit(address account, uint amount) public returns (uint) {
+        require(msg.sender == truebit);
+	require(deposits[address(this)] >= amount);
+
+	deposits[address(this)] = deposits[address(this)].sub(amount);
+	deposits[account] = deposits[account].add(amount);
+    }
+
+    function transferBondedDeposit(address to, uint amount) public returns (uint) {
+	require(msg.sender == truebit);
+	require(deposits[address(this)] >= amount);
+      
+	deposits[address(this)] = deposits[address(this)].sub(amount);
+	deposits[to] = deposits[to].add(amount);
+    }
+
     // @dev - allows a user to withdraw TRU from their deposit
     // @param amount - how much TRU to withdraw
     // @return - the user's updated deposit
@@ -54,6 +80,14 @@ contract DepositsManager {
 
         emit DepositWithdrawn(msg.sender, amount);
         return deposits[msg.sender];
+    }
+
+    function withdrawRewardAndTax(address account, uint reward, uint tax) public returns (uint) {
+	require(msg.sender == truebit);
+	uint amount = reward + tax;
+	require(deposits[account] >= amount);
+	deposits[account] = deposits[account].sub(amount);
+	return amount;
     }
 
 }

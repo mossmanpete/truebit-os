@@ -50,7 +50,7 @@ describe('Truebit OS WASM Scrypt test', async function() {
     	assert(os.solver)
     })
     
-    let tbFilesystem, tru
+    let tbFilesystem, tru, depositsManager
     
     describe('Normal task lifecycle', async () => {
 	let killSolver
@@ -61,6 +61,7 @@ describe('Truebit OS WASM Scrypt test', async function() {
 	    cConfig = await contractsConfig(web3)
             tbFilesystem = await contract(web3.currentProvider, cConfig['fileSystem'])
             tru = await contract(web3.currentProvider, cConfig['tru'])
+	    depositsManager = await contract(web3.currentProvider, cConfig['depositsManager'])
 	    killSolver = await os.solver.init(os.web3, os.accounts[1], os.logger, fileSystem)
 
 	    tgBalanceEth = await accounting.ethBalance(account)
@@ -117,7 +118,7 @@ describe('Truebit OS WASM Scrypt test', async function() {
 
 	    console.log(info)
 
-            scrypt_contract = await MyContract.new(cConfig.incentiveLayer.address, cConfig.tru.address, cConfig.fileSystem.address, bundleID, codeFileID, info.codehash, {from:account, gas:2000000})
+            scrypt_contract = await MyContract.new(cConfig.incentiveLayer.address, cConfig.tru.address, cConfig.fileSystem.address, cConfig.depositsManager.address, bundleID, codeFileID, info.codehash, {from:account, gas:2000000})
             let result_event = scrypt_contract.GotFiles()
             result_event.watch(async (err, result) => {
 		console.log("got event, file ID", result.args.files[0])
@@ -130,8 +131,8 @@ describe('Truebit OS WASM Scrypt test', async function() {
             tru.transfer(scrypt_contract.address, "100000000000", {from:account, gas:200000})
 	})
 	
-	it('should submit task', async () => {
-            scrypt_contract.submitData("testing", {from:account, gas:2000000})
+	it('should submit task', async () => {	    
+            await scrypt_contract.submitData("testing", {from:account, gas:2000000})
 	})
 
 	it('wait for task', async () => {

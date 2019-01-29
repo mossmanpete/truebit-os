@@ -22,7 +22,8 @@ function setup(web3) {
         fileSystem = await contract(httpProvider, config['fileSystem'])
         tru = await contract(httpProvider, config['tru'])
         disputeResolutionLayer = await contract(httpProvider, config['interactive'])
-        return [incentiveLayer, fileSystem, disputeResolutionLayer, tru]
+	depositsManager = await contract(httpProvider, config['depositsManager'])
+        return [incentiveLayer, fileSystem, disputeResolutionLayer, tru, depositsManager]
     })()
 }
 
@@ -108,7 +109,7 @@ module.exports = {
 
                     let secret = "0x" + helpers.makeSecret(taskID)
 
-                    await depositsHelper(web3, incentiveLayer, tru, account, minDeposit)
+                    await depositsHelper(web3, depositsManager, tru, account, minDeposit)
 
                     // console.log("secret", secret, web3.utils.soliditySha3(secret))
                     await incentiveLayer.registerForTask(taskID, web3.utils.soliditySha3(secret), { from: account, gas: 500000 })
@@ -212,7 +213,7 @@ module.exports = {
             let taskID = result.args.taskID	   
 	    
             if (tasks[taskID]) {
-		        delete tasks[taskID]
+		delete tasks[taskID]
                 await incentiveLayer.unbondDeposit(taskID, {from: account, gas: 100000})
                 logger.log({
                     level: 'info',
@@ -264,7 +265,7 @@ module.exports = {
                     lowStep: lowStep,
                     highStep: highStep,
                     taskID: taskID
-                }		    
+		}
 
                 await disputeResolutionLayer.initialize(
                     gameID,
@@ -491,8 +492,6 @@ module.exports = {
 
             if (await incentiveLayer.endChallengePeriod.call(taskID)) {
 
-                // console.log("Ending challenge")
-
                 working(taskID)
                 await incentiveLayer.endChallengePeriod(taskID, {from:account, gas: 100000})
 
@@ -531,9 +530,15 @@ module.exports = {
 	    
             if (await incentiveLayer.canFinalizeTask.call(taskID)) {
 
-                // console.log("Tax should be", (await incentiveLayer.getTax.call(taskID)).toString())
+                // console.log("Tax should be", (await incentiveLayer.getTax.call(taskID)).toString())		
 
                 working(taskID)
+		
+                logger.log({
+                    level: 'info',
+                    message: `SOLVER: Finalizing task ${taskID}`
+                })		
+
                 await incentiveLayer.finalizeTask(taskID, {from:account, gas:1000000})
 
                 logger.log({
