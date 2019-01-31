@@ -7,6 +7,8 @@ contract ExchangeRateOracle is Ownable {
     uint public TRUperUSD;
     uint public priceOfCycleTRU;
 
+    constructor() public Ownable() {}
+
     event ExchangeRateUpdate(uint indexed TRUperUSD, address owner);
 
     function updateExchangeRate (uint _TRUperUSD) public onlyOwner {

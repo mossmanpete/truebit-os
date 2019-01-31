@@ -5,6 +5,8 @@ import "./CommonOnchain.sol";
 contract Judge is CommonOnchain {
 
     address winner;
+
+    constructor() public {}
     
     bytes32 mask = bytes32(uint256(0xffffffffffffffffffffffffffffffffffffffffffffffff));
     

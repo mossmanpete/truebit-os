@@ -4,6 +4,8 @@ import "./FileManager.sol";
 
 contract BundleManager is FileManager {
 
+    constructor() public FileManager() {}
+
     // Methods to build IO blocks    
     struct Bundle {
 	bytes32 name_file;

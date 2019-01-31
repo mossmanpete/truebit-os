@@ -24,7 +24,7 @@ contract BaseJackpotManager is Ownable {
 
     event JackpotIncreased(uint amount);
 
-    constructor (address payable _TRU) public {
+    constructor (address payable _TRU) public Ownable() {
         token = TRU(_TRU);
 	forcedErrorThreshold = 500000; // should mean 100000/1000000 probability	
     }
