@@ -2,6 +2,10 @@ pragma solidity ^0.5.0;
 
 contract TruebitRegistry {
 
+    constructor() public payable {
+	 owner = msg.sender;
+    }
+
     address owner;
   
     struct Contracts {
@@ -16,10 +20,6 @@ contract TruebitRegistry {
     }
 
     Contracts contracts;
-
-    constructor() public {
-	owner = msg.sender;
-    }
 
     function setContracts(
 			  address _tru,

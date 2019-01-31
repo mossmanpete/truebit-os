@@ -19,10 +19,13 @@ function getArtifacts(name) {
 
 async function deployContract(name, options = {}, args = []) {
     let artifacts = getArtifacts(name)
+    // console.log(name, artifacts.abi, "0x"+artifacts.bin, options)
     let contract = new web3.eth.Contract(artifacts.abi)
-    return await contract
+    let res = await contract
         .deploy({ data: "0x" + artifacts.bin, arguments: args })
         .send(options)
+    res.abiModel = { abi: artifacts.abi }
+    return res
 }
 
 function exportContract(contract) {
@@ -39,8 +42,9 @@ async function deploy() {
 
     let accounts = await web3.eth.getAccounts()
 
-    let registry = await deployContract('TruebitRegistry', {from: accounts[0], gas: 300000})
+    let registry = await deployContract('TruebitRegistry', {from: accounts[0], gas: 3000000})
 	    
+    console.log("REGISTRY")
     let filesystem = await deployContract('Filesystem', {from: accounts[0], gas: 5500000})
 
     let judge = await deployContract('Judge', {from: accounts[0], gas: 5600000})
